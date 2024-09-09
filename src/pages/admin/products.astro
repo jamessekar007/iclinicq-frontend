@@ -1,0 +1,273 @@
+---
+import axios from 'axios';
+const { params } = Astro;
+let data;
+
+const response = await axios.get('http://localhost:3000/api/v1/users/products');
+
+var products = response.data.data;
+
+---
+
+
+<h1>Product List</h1>
+<!-- Button to open the modal -->
+<button style="width: 200px;" onclick="document.getElementById('id01').style.display='block'">Create Product</button>
+
+<!-- The Modal (contains the Sign Up form) -->
+<div id="id01" class="modal">
+  <span onclick="document.getElementById('id01').style.display='none'" class="close" title="Close Modal">Close</span>
+  <form class="modal-content" >
+    <div class="container">
+      <h2>Create Product</h2>
+     
+      <hr>
+      <label for="Name"><b>Name</b></label>
+      <input type="text" placeholder="Enter Name" name="name" id="name" required>
+
+      <label for="Image"><b>Image</b></label>
+      <input type="file" name="image" id="image" required>
+      <br/>
+      <br/>
+      <label for="Description"><b>Description</b></label>
+      <input type="text" placeholder="Enter Description" name="description" id="description" required>
+      <br/>
+      <label for="Amount"><b>Amount</b></label>
+      <input type="text" placeholder="Enter Amount" name="amount" id="amount" required>
+
+      <label for="Qty"><b>Qty</b></label>
+      <input type="text" placeholder="Enter Qty" name="qty" id="qty" required>
+
+      <div class="clearfix">
+        <button type="button" onclick="document.getElementById('id01').style.display='none'" class="cancelbtn">Cancel</button>
+        <button type="button" id="createProduct" class="signup">Submit</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Image</th>
+    <th>Description</th>
+    <th>Amount</th>
+    <th>qty</th>
+    <th>Action</th>
+  </tr>
+
+   {products.map(product => (
+        <tr>
+    <td>{product.name}</td>
+    <td>
+       <img src={(product.product_images[0] && product.product_images[0].image !== null) ? "http://localhost:3000/uploads/"+product.product_images[0].image : "http://localhost:3000/uploads/product-default.png"} alt="image" width="100" />
+    </td>
+    <td>{product.description}</td>
+    <td>{product.amount}</td>
+    <td>{product.qty}</td>
+    <td>
+      <input type="button" value="Edit" id="edit" />
+      <input type="button" onClick={`deleteProduct(${product.id})`} value="Delete" id="delete" />
+    </td>
+  </tr>
+      ))}
+   
+
+</table>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+import axios from "axios";
+
+  var token = '';
+  var baseurl = 'http://localhost:3000/api/v1/admin/products/';
+  if (typeof window !== 'undefined') {
+  // Retrieve data from localStorage
+  const storedUser = localStorage.getItem('user');
+  //console.log(storedUser)
+  if (storedUser) {
+    const user = JSON.parse(storedUser);
+    token = user.data.token
+  }
+}
+
+console.log(token);
+
+
+  // Get the modal
+  var modal = document.getElementById('id01');
+  
+  // When the user clicks anywhere outside of the modal, close it
+  window.onclick = function(event) {
+      if (event.target == modal) {
+          modal.style.display = "none";
+      }
+  }
+
+  async function handleClick () {
+    try {
+          let name = document.getElementById("name").value;
+          let description = document.getElementById("description").value;
+          let amount = document.getElementById("amount").value;
+          let qty = document.getElementById("qty").value;
+          let imageFile = document.querySelector('input[type="file"]').files[0];
+          console.log('imageFile',imageFile);
+          //let name = document.getElementById("name").value;
+
+          const response = await axios.post(baseurl, {
+            name:name,description:description,amount:amount,qty:qty,image:imageFile
+          },{ headers: {
+            'authorization': `Bearer ${token}`,  // Authorization header
+            'Content-Type': 'application/json',  // Set content type if necessary
+          },});
+           console.log('Response:', response.data);
+           alert('Product Added Successfully');
+           //localStorage.setItem('user', JSON.stringify(response.data)); 
+		   window.location.href = '/admin/products';
+        } catch (error) {
+          console.error('Error:', error);
+        }
+  }
+  document.getElementById("createProduct").addEventListener("click", handleClick);
+
+  window.deleteProduct = async function(product_id) {
+
+    const userConfirmed = window.confirm("Do you want to proceed?");
+    if(userConfirmed){
+
+   try {
+    const response = await axios.delete(baseurl+product_id, { headers: {
+           'authorization': `Bearer ${token}`,  // Authorization header
+           'Content-Type': 'application/json',  // Set content type if necessary
+         },});
+           console.log('Response:', response.data);
+           //localStorage.setItem('user', JSON.stringify(response.data)); 
+		   //window.location.href = '/admin/products';
+		   alert('Product Deleted Successfully');
+		   window.location.reload();
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+  };
+  
+  </script>
+
+<style>
+
+th {
+  background-color: #3377ff;
+  color: white;
+}
+
+</style>
+
+<style>* {box-sizing: border-box}
+
+* {box-sizing: border-box}
+/* Full-width input fields */
+  input[type=text], input[type=password] {
+  width: 100%;
+  padding: 15px;
+  margin: 5px 0 22px 0;
+  display: inline-block;
+  border: none;
+  background: #f1f1f1;
+}
+
+/* Add a background color when the inputs get focus */
+input[type=text]:focus, input[type=password]:focus {
+  background-color: #ddd;
+  outline: none;
+}
+
+/* Set a style for all buttons */
+button {
+  background-color: #04AA6D;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+}
+
+button:hover {
+  opacity:1;
+}
+
+/* Extra styles for the cancel button */
+.cancelbtn {
+  padding: 14px 20px;
+  background-color: #f44336;
+}
+
+/* Float cancel and signup buttons and add an equal width */
+.cancelbtn, .signupbtn {
+  float: left;
+  width: 50%;
+}
+
+/* Add padding to container elements */
+.container {
+  padding: 16px;
+}
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: #474e5d;
+  padding-top: 50px;
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* Style the horizontal ruler */
+hr {
+  border: 1px solid #f1f1f1;
+  margin-bottom: 25px;
+}
+
+/* The Close Button (x) */
+.close {
+  position: absolute;
+  right: 35px;
+  top: 15px;
+  font-size: 40px;
+  font-weight: bold;
+  color: #f1f1f1;
+}
+
+.close:hover,
+.close:focus {
+  color: #f44336;
+  cursor: pointer;
+}
+
+/* Clear floats */
+.clearfix::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+/* Change styles for cancel button and signup button on extra small screens */
+@media screen and (max-width: 300px) {
+  .cancelbtn, .signupbtn {
+    width: 100%;
+  }
+}
+</style>

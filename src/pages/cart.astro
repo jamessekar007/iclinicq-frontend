@@ -1,0 +1,405 @@
+---
+import axios from 'axios';
+const { params } = Astro;
+let data;
+
+const response = await axios.get('http://localhost:3000/api/v1/users/products');
+
+var products = response.data.data;
+
+---
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ecommerce Navbar Design</title>
+
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="py-3 py-md-5 bg-light">
+      <h3 id="loggedInName" style="float:right"></h3>
+		<div class="cart">
+			<i class="cart-icon">🛒</i>
+			<span class="cart-number" id="cart-number">0</span>
+		  </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <h4 class="mb-4">My Cart</h4>
+                </div>
+<div id="cartProducts">
+                <div class="col-md-3">
+                    <div class="product-card">
+                        <div class="product-card-img">
+                            
+                            
+                        </div>
+                        <div class="product-card-body">
+                           
+                            <h5 class="product-name">
+                               <a href="#">
+								ASD
+                               </a>
+                            </h5>
+                            <div>
+                                <span class="selling-price">$100</span>
+                            </div>
+                            <div class="mt-2">
+                              <input type="text" />
+                                <a href="#"  class="btn btn1">Update</a>
+                                <a href="#" class="btn btn1"> Delete </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+</div>
+
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+import axios from "axios";
+
+var token = '';
+var user_type = '';
+var baseurl = 'http://localhost:3000/api/v1/users/';
+if (typeof window !== 'undefined') {
+// Retrieve data from localStorage
+const storedUser = localStorage.getItem('user');
+console.log(storedUser)
+if (storedUser) {
+  const user = JSON.parse(storedUser);
+  token = user.data.token
+  user_type = user.data.user_type
+}
+}
+
+console.log(token);
+console.log(user_type);
+
+
+
+const response = await axios.get(baseurl+'cart',{ headers: {
+            'authorization': `Bearer ${token}`,  // Authorization header
+            'Content-Type': 'application/json',  // Set content type if necessary
+          },});
+console.log('Cart:', response.data.data);
+
+var cartList = '';
+if(response.data.data.length>0){
+  const jsonData = JSON.parse(JSON.stringify(response.data.data));
+
+  const userListDiv = document.getElementById('cartProducts');
+
+  const usersHTML = jsonData.map(cart => `
+<div class="col-md-3">
+                    <div class="product-card">
+                        <div class="product-card-img">
+                            
+                            
+                        </div>
+                        <div class="product-card-body">
+                           
+                            <h5 class="product-name">
+                               <a href="#">
+								              ${cart.product.name}
+                               </a>
+                            </h5>
+                            <div>
+                                <span id="original_price_${cart.id}" class="selling-price">$${cart.amount}</span>
+                            </div>
+                            <div class="mt-2">
+                              <input type="text" id="update_qty_${cart.id}" value="${cart.qty}" />
+                              <input type="hidden" id="update_product_id_${cart.id}" value="${cart.product_id}" />
+                              <input type="hidden" id="original_amount_${cart.id}" value="${cart.product.amount}" />
+                                <button id="${cart.id}" class="btn btn1 cartUpdate">Update</button>
+                                <button id="deleteCart_${cart.id}" class="btn btn1 cartDelete"> Delete </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+`).join('');
+userListDiv.innerHTML = usersHTML;
+}
+document.getElementById("cart-number").innerHTML  = response.data.data.length;
+
+
+
+const buttons = document.getElementsByClassName('cartUpdate');
+
+for (let i = 0; i < buttons.length; i++) {
+  buttons[i].addEventListener('click', async function() {
+   
+    var cart_id = `${this.id}`
+    var qty =  document.getElementById("update_qty_"+cart_id).value;
+    var product_id =  document.getElementById("update_product_id_"+cart_id).value;
+    var price =  document.getElementById("original_amount_"+cart_id).value;
+
+    var amount = price*qty;
+
+    try {
+         
+          const response = await axios.put(baseurl+'cart/'+cart_id, {
+            qty:qty,product_id:product_id,amount:amount
+          },{ headers: {
+            'authorization': `Bearer ${token}`,  // Authorization header
+            'Content-Type': 'application/json',  // Set content type if necessary
+          },});
+           console.log('Response:', response.data);
+           //localStorage.setItem('user', JSON.stringify(response.data)); 
+          alert('Cart Updated Successfully');
+          window.location.reload();
+        } catch (error) {
+          console.error('Error:', error);
+        }
+
+  });
+}
+
+const deletebuttons = document.getElementsByClassName('cartDelete');
+
+for (let i = 0; i < deletebuttons.length; i++) {
+  deletebuttons[i].addEventListener('click', async function() {
+    
+    const userConfirmed = window.confirm("Do you want to proceed?");
+    if (userConfirmed) {
+       var cart_id = `${this.id}`
+       console.log(cart_id);
+       let splitValue = cart_id.split('deleteCart_')[1];
+
+       try {
+         const response = await axios.delete(baseurl+'cart/'+splitValue, { headers: {
+           'authorization': `Bearer ${token}`,  // Authorization header
+           'Content-Type': 'application/json',  // Set content type if necessary
+         },});
+          console.log('Response:', response.data);
+          //localStorage.setItem('user', JSON.stringify(response.data)); 
+         alert('Cart Deleted Successfully');
+         window.location.reload();
+       } catch (error) {
+         console.error('Error:', error);
+       }
+      
+    // Perform the action for when the user clicks "OK"
+  }
+  });
+}
+  
+</script>
+
+	<style>
+		.cart {
+  position: relative;
+  display: inline-block;
+  float:right;
+  margin-right: 0%;
+}
+
+.cart-icon {
+  font-size: 30px; /* Icon size, adjust as necessary */
+  position: relative;
+  float:right;
+  margin-right: 0%;
+}
+
+.cart-number {
+  position: absolute;
+  top: -10px;   /* Position the badge above the cart icon */
+  right: -10px; /* Position the badge to the right of the cart icon */
+  background-color: red;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 50%; /* Circular badge */
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 20px;    /* Ensures the badge is large enough for numbers */
+  min-height: 20px;   /* Ensures the badge is round */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+		/* Product Card */
+.product-card{
+    background-color: #fff;
+    border: 1px solid #ccc;
+    margin-bottom: 24px;
+}
+.product-card a{
+    text-decoration: none;
+}
+.product-card .stock{
+    position: absolute;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 12px;
+    margin: 8px;
+    font-size: 12px;
+}
+.product-card .product-card-img{
+    max-height: 260px;
+    overflow: hidden;
+    border-bottom: 1px solid #ccc;
+}
+.product-card .product-card-img img{
+    width: 100%;
+}
+.product-card .product-card-body{
+    padding: 10px 10px;
+}
+.product-card .product-card-body .product-brand{
+    font-size: 14px;
+    font-weight: 400;
+    margin-bottom: 4px;
+    color: #937979;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.product-card .product-card-body .product-name{
+    font-size: 20px;
+    font-weight: 600;
+    color: #000;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.product-card .product-card-body .selling-price{
+    font-size: 22px;
+    color: #000;
+    font-weight: 600;
+    margin-right: 8px;
+}
+.product-card .product-card-body .original-price{
+    font-size: 18px;
+    color: #937979;
+    font-weight: 400;
+    text-decoration: line-through;
+}
+.product-card .product-card-body .btn1{
+    border: 1px solid;
+    margin-right: 3px;
+    border-radius: 0px;
+    font-size: 12px;
+    margin-top: 10px;
+}
+/* Product Card End */
+
+* {box-sizing: border-box}
+/* Full-width input fields */
+  input[type=text], input[type=password] {
+  width: 100%;
+  padding: 15px;
+  margin: 5px 0 22px 0;
+  display: inline-block;
+  border: none;
+  background: #f1f1f1;
+}
+
+/* Add a background color when the inputs get focus */
+input[type=text]:focus, input[type=password]:focus {
+  background-color: #ddd;
+  outline: none;
+}
+
+/* Set a style for all buttons */
+button {
+  background-color: #04AA6D;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+}
+
+button:hover {
+  opacity:1;
+}
+
+/* Extra styles for the cancel button */
+.cancelbtn {
+  padding: 14px 20px;
+  background-color: #f44336;
+}
+
+/* Float cancel and signup buttons and add an equal width */
+.cancelbtn, .signupbtn {
+  float: left;
+  width: 50%;
+}
+
+/* Add padding to container elements */
+.container {
+  padding: 16px;
+}
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: #474e5d;
+  padding-top: 50px;
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* Style the horizontal ruler */
+hr {
+  border: 1px solid #f1f1f1;
+  margin-bottom: 25px;
+}
+
+/* The Close Button (x) */
+.close {
+  position: absolute;
+  right: 35px;
+  top: 15px;
+  font-size: 40px;
+  font-weight: bold;
+  color: #f1f1f1;
+}
+
+.close:hover,
+.close:focus {
+  color: #f44336;
+  cursor: pointer;
+}
+
+/* Clear floats */
+.clearfix::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+/* Change styles for cancel button and signup button on extra small screens */
+@media screen and (max-width: 300px) {
+  .cancelbtn, .signupbtn {
+    width: 100%;
+  }
+}
+	</style>
+</body>
+</html>
